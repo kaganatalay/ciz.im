@@ -1,6 +1,9 @@
 import socketio
 import threading
 
+my_username = "admin"
+
+
 sio = socketio.Client()
 
 def wait_for_enter_and_start():
@@ -31,6 +34,19 @@ def start_error(data):
 @sio.on("round_started")
 def round_started(data):
     print("🟢 ADMIN round_started:", data)
+
+    if data.get("drawer") == my_username:
+        print("✏️ ADMIN is drawer, sending draw events...")
+        sio.emit("draw", {"x": 10, "y": 10, "type": "start"})
+        sio.emit("draw", {"x": 20, "y": 20, "type": "move"})
+        sio.emit("draw", {"x": 30, "y": 30, "type": "end"})
+    else:
+        print("👀 ADMIN is viewer")
+
+@sio.on("draw")
+def on_draw(data):
+    print("🎨 ADMIN received draw:", data)
+
 
 @sio.on("your_word")
 def your_word(data):

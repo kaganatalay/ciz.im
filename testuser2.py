@@ -1,6 +1,6 @@
 import socketio
 
-my_username = "user1"
+my_username = "user2"
 
 
 sio = socketio.Client()
@@ -8,7 +8,7 @@ sio = socketio.Client()
 @sio.event
 def connect():
     print("✅ USER connected")
-    sio.emit("join", {"username": "user1"})
+    sio.emit("join", {"username": "user2"})
 
 @sio.on("join_success")
 def join_success(data):

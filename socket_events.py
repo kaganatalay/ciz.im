@@ -59,3 +59,21 @@ def register_socket_events(socketio, game):
 
         # 5) Sadece çizene: kelime
         emit("your_word", {"word": round_info["word"]}, to=round_info["drawer_id"])
+
+    @socketio.on("draw")
+    def on_draw(data):
+        # Oyun aktif değilse çizimi yok say
+        if not game.is_game_active:
+            return
+
+        # Gönderen drawer mı?
+        if not game.current_drawer:
+            return
+
+        if request.sid != game.current_drawer.session_id:
+            # Drawer olmayan biri çizemez
+            return
+
+        # data örn: { "x": 10, "y": 20, "type": "move" }
+        # Çizimi diğer herkese gönder (drawer hariç)
+        emit("draw", data, broadcast=True, include_self=False)
