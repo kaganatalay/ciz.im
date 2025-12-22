@@ -77,3 +77,40 @@ def register_socket_events(socketio, game):
         # data örn: { "x": 10, "y": 20, "type": "move" }
         # Çizimi diğer herkese gönder (drawer hariç)
         emit("draw", data, broadcast=True, include_self=False)
+        
+        
+    @socketio.on("guess")
+    def on_guess(data):
+        text = (data or {}).get("text", "")
+
+        result = game.process_guess(request.sid, text)
+        if result is None:
+            return
+
+        # Yanlış tahmin: chat gibi yayınlayalım (isterseniz kapatırız)
+        if result["type"] == "CHAT_MESSAGE":
+            emit("chat_message", {
+                "from": game.players.get(request.sid).username if request.sid in game.players else "unknown",
+                "message": result["message"]
+            }, broadcast=True)
+            return
+
+        # Daha önce bildi: sadece tahmin edene
+        if result["type"] == "ALREADY_GUESSED":
+            emit("guess_feedback", {"status": "already_guessed"})
+            return
+
+        # Doğru tahmin: herkese skor update
+        if result["type"] == "CORRECT_GUESS":
+            emit("correct_guess", {
+                "player_name": result["player_name"],
+                "new_score": result["new_score"],
+                "round_over": result["round_over"]
+            }, broadcast=True)
+
+            # Skor tablosunu da herkese güncelleyelim
+            emit("players_update", {"players": game.get_all_players()}, broadcast=True)
+
+            # Tur bitti ise (şimdilik sadece bildiriyoruz)
+            if result["round_over"]:
+                emit("round_over", {"word": game.current_word}, broadcast=True)
