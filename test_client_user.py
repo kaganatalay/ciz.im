@@ -52,6 +52,11 @@ def correct_guess(data):
 @sio.on("round_over")
 def round_over(data):
     print("🏁 round_over:", data)
+    
+@sio.on("server_notice")
+def server_notice(data):
+    print("📢 NOTICE:", data)
+
 
 sio.connect("http://127.0.0.1:5000")
 sio.wait()

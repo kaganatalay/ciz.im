@@ -114,3 +114,34 @@ def register_socket_events(socketio, game):
             # Tur bitti ise (şimdilik sadece bildiriyoruz)
             if result["round_over"]:
                 emit("round_over", {"word": game.current_word}, broadcast=True)
+
+
+    @socketio.on("disconnect")
+    def on_disconnect():
+        sid = request.sid
+
+        # Oyuncu listesinde yoksa çık
+        if sid not in game.players:
+            return
+
+        left_player = game.players[sid]
+        left_name = left_player.username
+        was_admin = left_player.is_admin
+
+        # oyuncuyu sil
+        game.remove_player(sid)
+
+        # admin ayrıldıysa: en basit şekilde ilk kalan kişiye admin ver
+        if was_admin and len(game.players) > 0:
+            # tüm oyuncuların adminliğini kapat
+            for p in game.players.values():
+                p.is_admin = False
+            # ilk oyuncuya ver
+            first_player = next(iter(game.players.values()))
+            first_player.is_admin = True
+
+        # herkese bildirim (opsiyonel ama faydalı)
+        emit("server_notice", {"text": f"{left_name} ayrıldı."}, broadcast=True)
+
+        # herkese güncel liste
+        emit("players_update", {"players": game.get_all_players()}, broadcast=True)
