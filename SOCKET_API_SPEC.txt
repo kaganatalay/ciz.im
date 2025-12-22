@@ -1,0 +1,156 @@
+GARTIC.IO CLONE - SOCKET EVENT API SPEC
+=====================================
+
+Server: Flask + Flask-SocketIO
+Transport: WebSocket / Polling
+Namespace: default (/)
+
+-------------------------------------
+1. join
+-------------------------------------
+Sent by: Client
+Payload:
+{
+  "username": string
+}
+
+Server Response:
+- join_success (only to sender)
+- players_update (broadcast)
+
+-------------------------------------
+2. join_success
+-------------------------------------
+Sent by: Server (to joining client)
+Payload:
+{
+  "username": string,
+  "is_admin": boolean
+}
+
+-------------------------------------
+3. players_update
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "players": [
+    {
+      "username": string,
+      "score": number,
+      "is_admin": boolean
+    }
+  ]
+}
+
+-------------------------------------
+4. start_game
+-------------------------------------
+Sent by: Client (admin only)
+Payload: none
+
+Errors:
+- start_error { "error": "not admin" }
+- start_error { "error": "need at least 2 players" }
+
+-------------------------------------
+5. round_started
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "drawer": string
+}
+
+-------------------------------------
+6. your_word
+-------------------------------------
+Sent by: Server (only to drawer)
+Payload:
+{
+  "word": string
+}
+
+-------------------------------------
+7. draw
+-------------------------------------
+Sent by: Client (drawer only)
+Payload example:
+{
+  "x0": number,
+  "y0": number,
+  "x1": number,
+  "y1": number,
+  "color": string,
+  "width": number
+}
+
+Server Behavior:
+- Broadcasts to all except drawer
+
+-------------------------------------
+8. guess
+-------------------------------------
+Sent by: Client (non-drawer)
+Payload:
+{
+  "text": string
+}
+
+-------------------------------------
+9. chat_message
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "from": string,
+  "message": string
+}
+
+-------------------------------------
+10. correct_guess
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "player_name": string,
+  "new_score": number,
+  "round_over": boolean
+}
+
+-------------------------------------
+11. guess_feedback
+-------------------------------------
+Sent by: Server (only to sender)
+Payload:
+{
+  "status": "already_guessed"
+}
+
+-------------------------------------
+12. round_over
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "word": string
+}
+
+-------------------------------------
+13. server_notice
+-------------------------------------
+Sent by: Server (broadcast)
+Payload:
+{
+  "text": string
+}
+
+-------------------------------------
+14. disconnect
+-------------------------------------
+Triggered automatically by Socket.IO
+
+Server Behavior:
+- Removes player
+- Reassigns admin if needed
+- Broadcasts server_notice + players_update
