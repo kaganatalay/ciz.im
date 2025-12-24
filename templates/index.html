@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gartic.io Clone</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div id="login-screen">
+      <h1>Gartic.io Clone</h1>
+      <div id="create-game">
+        <button id="create-btn">Create New Game</button>
+        <p>Game ID: <span id="game-id"></span></p>
+      </div>
+      <div id="join-game">
+        <input type="text" id="join-game-id" placeholder="Enter Game ID" />
+        <input type="text" id="join-username" placeholder="Your Username" />
+        <button id="join-btn">Join Game</button>
+      </div>
+    </div>
+
+    <div id="lobby" style="display: none">
+      <h2>Game Lobby - ID: <span id="lobby-game-id"></span></h2>
+      <div id="players-list"></div>
+      <button id="start-game-btn" style="display: none">Start Game</button>
+      <p id="creator-note">You are the creator. Click Start when ready.</p>
+    </div>
+
+    <div id="game" style="display: none">
+      <div id="game-header">
+        <p id="current-drawer">Drawer: ...</p>
+        <p id="word-hint">Word: ...</p>
+      </div>
+      <div id="game-area">
+        <canvas id="drawing-canvas" width="600" height="400"></canvas>
+        <div id="chat">
+          <div id="messages"></div>
+          <input
+            type="text"
+            id="message-input"
+            placeholder="Guess the word..."
+          />
+        </div>
+      </div>
+    </div>
+
+    <div id="game-over-popup" style="display: none">
+      <div id="popup-content">
+        <p id="winner-text"></p>
+        <button id="new-round-btn">New Round</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
