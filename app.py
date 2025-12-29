@@ -24,4 +24,4 @@ if __name__ == '__main__':
     port = 5000
 
     print(f"Starting server on port {port}...")
-    socketio.run(app, debug=True, port=port)
+    socketio.run(app, host='0.0.0.0', debug=True, port=port)

@@ -40,7 +40,7 @@ class Game:
     ]
 
     def __init__(self):
-        self.id = str(uuid.uuid4())[:6].upper()  # Simple short ID
+        self.id = str(uuid.uuid4())[:4].upper()  # Simple short ID
         self.creator_sid = None
         self.players: dict[str, Player] = {}  # session_id: Player
         self.is_game_active = False

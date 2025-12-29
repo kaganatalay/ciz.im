@@ -111,16 +111,40 @@ def disconnect():
         if sid in game.players:
             handle_player_leave(sid, game)
 
+# Add this new event handler
+@socketio.on('clear_board')
+def clear_board(data):
+    sid = getattr(request, 'sid')
+    game_id = data['game_id'].upper()
+    game = game_manager.get_game(game_id)
+    # Only allow the current drawer to clear
+    if game and game.current_drawer and game.current_drawer.session_id == sid:
+        socketio.emit('clear_board', to=game_id)
+
+# Update the handle_player_leave function
 def handle_player_leave(sid, game):
-    # Check if the person leaving is the admin
     player = game.players.get(sid)
     was_admin = player.is_admin if player else False
     
+    # NEW: Check if the person leaving was the Drawer
+    was_drawer = (game.current_drawer and game.current_drawer.session_id == sid)
+
     game.remove_player(sid)
 
     if was_admin:
-        socketio.emit('game_closed', {'message': 'Admin left the game.'}, to=game.id)
+        socketio.emit('game_closed', {'message': 'Host left the game.'}, to=game.id)
         game_manager.delete_game(game.id)
+    elif was_drawer and game.is_game_active:
+        # NEW: Reset game state if drawer leaves
+        game.is_game_active = False
+        game.current_drawer = None
+        socketio.emit('round_end', {
+            'winner': 'No one',
+            'word': game.current_word,
+            'reason': 'drawer_left' # Special flag for client
+        }, to=game.id)
+        # Also send updated player list
+        socketio.emit('update_players', {'players': game.get_all_players()}, to=game.id)
     elif len(game.players) == 0:
         game_manager.delete_game(game.id)
     else:

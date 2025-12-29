@@ -15,7 +15,7 @@
   </head>
   <body>
     <div id="login-screen" class="screen active">
-      <h1 id="title">🎨 SketchIt</h1>
+      <h1 id="game-title">🎨 SketchIt</h1>
       <div class="input-group">
         <input
           type="text"
@@ -25,14 +25,14 @@
         />
       </div>
       <div class="input-group">
-        <input type="text" id="gameId" placeholder="Room Code (e.g. A1)" />
+        <input type="text" id="gameId" placeholder="Room Code" />
       </div>
       <button onclick="joinGame()">Enter Room</button>
     </div>
 
     <div id="lobby-screen" class="screen">
       <div class="lobby-header">
-        <button class="btn-secondary" onclick="leaveGame()">← Leave</button>
+        <button class="btn-secondary" onclick="leaveGame()">← Exit</button>
         <div class="room-display">
           <span class="room-label">ROOM CODE</span>
           <span id="lobby-room-code">---</span>
@@ -43,9 +43,9 @@
       <div id="player-list"></div>
 
       <div id="lobby-controls">
-        <p id="waiting-msg">Waiting for admin to start...</p>
+        <p id="waiting-msg">Waiting for host to start...</p>
         <button id="btn-start-game" onclick="startGame()" style="display: none">
-          Start Game
+          Start Round
         </button>
       </div>
     </div>
@@ -57,8 +57,11 @@
           <div id="secret-word">? ? ?</div>
         </div>
 
-        <div id="canvas-container">
-          <canvas id="canvas"></canvas>
+        <div id="canvas-wrapper">
+          <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+          </div>
+          <button id="btn-clear" onclick="clearCanvas()">🗑️ Clear</button>
         </div>
 
         <div id="chat-container">
@@ -70,7 +73,7 @@
               placeholder="Type here..."
               autocomplete="off"
             />
-            <button type="submit">Send</button>
+            <button type="submit" id="btn-chat-submit">Send</button>
           </form>
         </div>
       </div>
@@ -78,10 +81,10 @@
 
     <div id="overlay" class="hidden">
       <div class="overlay-content">
-        <h1 id="overlay-title">WINNER!</h1>
-        <p id="overlay-msg">User guessed the word</p>
+        <h1 id="overlay-title">ROUND OVER!</h1>
+        <p id="overlay-msg">...</p>
         <div id="overlay-word-reveal">Word: ???</div>
-        <button onclick="closeOverlay()">Back to Lobby</button>
+        <button onclick="backToLobby()">Back to Lobby</button>
       </div>
     </div>
 
