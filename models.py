@@ -88,41 +88,27 @@ class Game:
         }
 
     def process_guess(self, session_id, guess_text):
-        """
-        Gelen tahminin doğru olup olmadığını kontrol eder.
-        Dönüş Değeri: Sonuçla ilgili bir sözlük (Dict) döner.
-        """
-        # Oyun aktif değilse veya gönderen çizen kişiyse işlem yapma
         if not self.is_game_active:
             return None
 
+        # Check if message is from the drawer (prevent cheating/spoiling)
         if self.current_drawer and session_id == self.current_drawer.session_id:
-            return None  # Çizen kişi kendi kelimesini tahmin edemez
+            return None 
 
-        # Harf büyüklüğünü yoksay (Normalization)
         clean_guess = guess_text.strip().lower()
         target_word = self.current_word.lower()
 
         if clean_guess == target_word:
-            # Oyuncu daha önce bildi mi?
-            if session_id in self.guessed_players:
-                return {"type": "ALREADY_GUESSED"}
 
-            # DOĞRU TAHMİN!
-            self.guessed_players.add(session_id)
-            player = self.players[session_id]
-            player.score += 10  # Basit puanlama: Her bilene 10 puan
-
-            # Tur bitti mi kontrolü (Çizen hariç herkes bildi mi?)
-            needed_guesses = len(self.players) - 1
-            round_over = (len(self.guessed_players) >= needed_guesses)
-
+            winner = self.players[session_id]
+            winner.score += 10
+            self.is_game_active = False # End the round immediately
+            
             return {
-                "type": "CORRECT_GUESS",
-                "player_name": player.username,
-                "new_score": player.score,
-                "round_over": round_over
+                "type": "ROUND_WIN",
+                "winner": winner.username,
+                "word": self.current_word
             }
 
-        # Yanlış tahminse sadece sohbet mesajı olarak algılanır
+        # Treat as chat message
         return {"type": "CHAT_MESSAGE", "message": guess_text}

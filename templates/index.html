@@ -2,59 +2,82 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gartic.io Clone</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Draw & Guess</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
   </head>
   <body>
-    <div id="login-screen">
-      <h1>Gartic.io Clone</h1>
-      <div id="create-game">
-        <button id="create-btn">Create New Game</button>
-        <p>Game ID: <span id="game-id"></span></p>
+    <div id="login-screen" class="screen active">
+      <h1 id="title">🎨 SketchIt</h1>
+      <div class="input-group">
+        <input
+          type="text"
+          id="username"
+          placeholder="Enter your name"
+          maxlength="10"
+        />
       </div>
-      <div id="join-game">
-        <input type="text" id="join-game-id" placeholder="Enter Game ID" />
-        <input type="text" id="join-username" placeholder="Your Username" />
-        <button id="join-btn">Join Game</button>
+      <div class="input-group">
+        <input type="text" id="gameId" placeholder="Room Code (e.g. A1)" />
+      </div>
+      <button onclick="joinGame()">Enter Room</button>
+    </div>
+
+    <div id="lobby-screen" class="screen">
+      <div class="room-code">Room: <span id="lobby-room-code">---</span></div>
+
+      <div id="player-list"></div>
+
+      <div id="lobby-controls">
+        <p id="waiting-msg">Waiting for admin to start...</p>
+        <button id="btn-start-game" onclick="startGame()" style="display: none">
+          Start Game
+        </button>
       </div>
     </div>
 
-    <div id="lobby" style="display: none">
-      <h2>Game Lobby - ID: <span id="lobby-game-id"></span></h2>
-      <div id="players-list"></div>
-      <button id="start-game-btn" style="display: none">Start Game</button>
-    </div>
+    <div id="game-screen" class="screen no-padding">
+      <div id="game-ui">
+        <div id="top-bar">
+          <div id="role-text">Waiting...</div>
+          <div id="secret-word">? ? ?</div>
+        </div>
 
-    <div id="game" style="display: none">
-      <div id="game-header">
-        <p id="current-drawer">Drawer: ...</p>
-        <p id="word-hint">Word: ...</p>
-      </div>
-      <div id="game-area">
-        <canvas id="drawing-canvas" width="600" height="400"></canvas>
-        <div id="chat">
+        <div id="canvas-container">
+          <canvas id="canvas"></canvas>
+        </div>
+
+        <div id="chat-container">
           <div id="messages"></div>
-          <input
-            type="text"
-            id="message-input"
-            placeholder="Guess the word..."
-          />
+          <form id="chat-form" onsubmit="sendGuess(event)">
+            <input
+              type="text"
+              id="guess-input"
+              placeholder="Type here..."
+              autocomplete="off"
+            />
+            <button type="submit">Send</button>
+          </form>
         </div>
       </div>
     </div>
 
-    <div id="game-over-popup" style="display: none">
-      <div id="popup-content">
-        <p id="winner-text"></p>
-        <button id="new-round-btn">New Round</button>
+    <div id="overlay" class="hidden">
+      <div class="overlay-content">
+        <h1 id="overlay-title">WINNER!</h1>
+        <p id="overlay-msg">User guessed the word</p>
+        <div id="overlay-word-reveal">Word: ???</div>
+        <button onclick="closeOverlay()">Back to Lobby</button>
       </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='game.js') }}"></script>
   </body>
 </html>

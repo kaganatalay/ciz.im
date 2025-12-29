@@ -17,7 +17,6 @@ def join_game(data):
     player = Player(sid, username)
 
     game = game_manager.get_game(game_id)
-    print("Found game ", game_id, ":", game)
     if (game is None):
         game = game_manager.create_game()
         player.is_admin = True
@@ -28,8 +27,6 @@ def join_game(data):
     
     game.add_player(player)
     join_room(game.id, sid)
-
-    print("Games after join:", game_manager.games)
 
     emit('game_joined', {
         'game_id': game.id,
@@ -43,13 +40,24 @@ def start_game(data):
     sid = getattr(request, 'sid')
     game_id = data['game_id'].upper()
     game = game_manager.get_game(game_id)
+    
+    # Validation: Only admin can start
     if not game or sid not in game.players or not game.players[sid].is_admin:
         return
+        
     round_data = game.start_new_round()
     if not round_data:
-        emit('error', {'message': 'Not enough players'}, to=sid)
+        emit('error', {'message': 'Need at least 2 players!'}, to=sid)
         return
-    socketio.emit('game_started', round_data, to=game_id)
+
+    # 1. Send REAL word to Drawer
+    drawer_sid = round_data['drawer_id']
+    socketio.emit('game_started', round_data, to=drawer_sid)
+
+    # 2. Send MASKED word to Guessers
+    guesser_data = round_data.copy()
+    guesser_data['word'] = "_ " * len(round_data['word'])
+    socketio.emit('game_started', guesser_data, to=game_id, skip_sid=drawer_sid)
 
 @socketio.on('guess')
 def guess(data):
@@ -57,18 +65,18 @@ def guess(data):
     game_id = data['game_id'].upper()
     message = data['message']
     game = game_manager.get_game(game_id)
-    if not game or sid not in game.players:
-        return
-    player = game.players[sid]
+    
+    if not game: return
+
     result = game.process_guess(sid, message)
     if result:
         if result['type'] == 'CHAT_MESSAGE':
-            socketio.emit('message', {'message': f"{player.username}: {message}"}, to=game_id)
-        elif result['type'] == 'CORRECT_GUESS':
-            socketio.emit('correct_guess', {'player_name': result['player_name']}, to=game_id)
-            if result['round_over']:
-                # For basic, just show popup
-                pass
+            socketio.emit('message', {'message': f"{game.players[sid].username}: {message}"}, to=game_id)
+        elif result['type'] == 'ROUND_WIN':
+            socketio.emit('round_end', {
+                'winner': result['winner'],
+                'word': result['word']
+            }, to=game_id)
 
 @socketio.on('draw_start')
 def draw_start(data):
