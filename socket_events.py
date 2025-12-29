@@ -1,6 +1,6 @@
-from app import socketio, game_manager
-from flask_socketio import emit, join_room, leave_room
 from flask import request
+from flask_socketio import emit, join_room, leave_room
+from extensions import socketio, game_manager
 
 print("Socket events module loaded")
 
