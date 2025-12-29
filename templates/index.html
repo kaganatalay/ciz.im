@@ -31,7 +31,14 @@
     </div>
 
     <div id="lobby-screen" class="screen">
-      <div class="room-code">Room: <span id="lobby-room-code">---</span></div>
+      <div class="lobby-header">
+        <button class="btn-secondary" onclick="leaveGame()">← Leave</button>
+        <div class="room-display">
+          <span class="room-label">ROOM CODE</span>
+          <span id="lobby-room-code">---</span>
+        </div>
+        <div style="width: 60px"></div>
+      </div>
 
       <div id="player-list"></div>
 

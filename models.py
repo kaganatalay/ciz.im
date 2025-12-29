@@ -10,6 +10,7 @@ class Player:
 
     def to_dict(self):
         return {
+            "pid": self.session_id,
             "username": self.username,
             "score": self.score,
             "is_admin": self.is_admin

@@ -1,12 +1,12 @@
 const socket = io();
 
-// State
-let mySessionId = null;
-let currentGameId = null;
+// --- State Variables ---
+let mySessionId = null; // My unique player ID (pid)
+let currentGameId = null; // The Room Code
 let currentDrawerId = null;
-let isDrawing = false;
+let isDrawing = false; // Mouse/Touch down state
 
-// Elements
+// --- DOM Elements ---
 const screens = {
   login: document.getElementById("login-screen"),
   lobby: document.getElementById("lobby-screen"),
@@ -15,6 +15,7 @@ const screens = {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
+const messagesDiv = document.getElementById("messages");
 
 // --- Navigation ---
 function showScreen(name) {
@@ -23,12 +24,15 @@ function showScreen(name) {
   if (name === "game") resizeCanvas();
 }
 
-// --- Socket Events ---
-socket.on("connect", () => console.log("Connected"));
+// --- Socket Event Listeners ---
 
-// 1. Join & Lobby Updates
+socket.on("connect", () => {
+  console.log("Connected to server");
+});
+
+// 1. Join & Lobby
 socket.on("game_joined", (data) => {
-  mySessionId = data.you.session_id;
+  mySessionId = data.you.pid; // Store my ID
   currentGameId = data.game_id;
 
   // Update Lobby UI
@@ -41,65 +45,72 @@ socket.on("update_players", (data) => {
   updateLobbyList(data.players);
 });
 
-// 2. Game Start
+socket.on("error", (data) => {
+  alert(data.message);
+});
+
+// 2. Admin Left / Game Closed
+socket.on("game_closed", (data) => {
+  alert(data.message);
+  resetGame();
+});
+
+// 3. Game Logic
 socket.on("game_started", (data) => {
   currentDrawerId = data.drawer_id;
   const amIDrawing = mySessionId === currentDrawerId;
 
-  // Setup UI
-  document.getElementById("secret-word").innerText = data.word;
-  document.getElementById("role-text").innerText = amIDrawing
-    ? "✏️ IT'S YOUR TURN TO DRAW!"
-    : `👀 GUESS WHAT ${data.drawer} IS DRAWING`;
+  // Update Top Bar
+  const secretWordEl = document.getElementById("secret-word");
+  const roleTextEl = document.getElementById("role-text");
 
-  document.getElementById("secret-word").style.color = amIDrawing
-    ? "#22c55e"
-    : "#ffffff";
+  secretWordEl.innerText = data.word;
 
-  // Lock/Unlock Canvas
-  const container = document.getElementById("canvas-container");
   if (amIDrawing) {
-    container.classList.remove("locked");
+    roleTextEl.innerText = "✏️ It's your turn to draw!";
+    roleTextEl.style.color = "#22c55e"; // Green
+    secretWordEl.style.color = "#22c55e";
+    document.getElementById("canvas-container").classList.remove("locked");
   } else {
-    container.classList.add("locked");
+    roleTextEl.innerText = `👀 Guess what ${data.drawer} is drawing`;
+    roleTextEl.style.color = "#a1a1aa"; // Gray
+    secretWordEl.style.color = "#ffffff";
+    document.getElementById("canvas-container").classList.add("locked");
   }
 
-  // Clear previous drawings
+  // Reset Game State
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  document.getElementById("messages").innerHTML = ""; // Clear chat
+  messagesDiv.innerHTML = "";
+  addMessage("Game started!", "msg-system");
+
   showScreen("game");
 });
 
-// 3. Game/Round End
 socket.on("round_end", (data) => {
-  const isMe = data.winner === document.getElementById("username").value; // Rough check, better to use ID if available
-
+  // Show Overlay
   document.getElementById("overlay-title").innerText = "ROUND OVER!";
   document.getElementById(
     "overlay-msg"
-  ).innerText = `${data.winner} correctly guessed the word!`;
-  document.getElementById(
-    "overlay-word-reveal"
-  ).innerText = `The word was: ${data.word}`;
-
-  // Visual flair
-  const title = document.getElementById("overlay-title");
-  title.style.color = "#22c55e"; // Green default
+  ).innerText = `${data.winner} guessed correctly!`;
+  document.getElementById("overlay-word-reveal").innerText = data.word;
 
   overlay.classList.remove("hidden");
 });
 
-// 4. Drawing & Chat
+socket.on("message", (data) => addMessage(data.message, "msg-chat"));
+
+// 4. Drawing Events
 socket.on("draw_start", (data) => drawRemote(data.x, data.y, "start"));
 socket.on("draw_line", (data) => drawRemote(data.x, data.y, "line"));
-socket.on("message", (data) => addMessage(data.message));
 
-// --- Functions ---
+// --- User Actions ---
 
 function joinGame() {
   const username = document.getElementById("username").value.trim();
   const gameId = document.getElementById("gameId").value.trim();
-  if (!username || !gameId) return alert("Fill all fields");
+
+  if (!username || !gameId) return alert("Please enter name and room code");
+
   socket.emit("join_game", { username, game_id: gameId });
 }
 
@@ -107,46 +118,32 @@ function startGame() {
   socket.emit("start_game", { game_id: currentGameId });
 }
 
-function updateLobbyList(players) {
-  const list = document.getElementById("player-list");
-  list.innerHTML = "";
+function leaveGame() {
+  if (!confirm("Leave the room?")) return;
+  socket.emit("leave_game", { game_id: currentGameId });
+  resetGame();
+}
 
-  // Find myself to check if I am admin
-  const me = players.find((p) => p.session_id === mySessionId);
-  const isAdmin = me ? me.is_admin : false;
-
-  // Show/Hide Start Button
-  const btn = document.getElementById("btn-start-game");
-  const msg = document.getElementById("waiting-msg");
-  if (isAdmin) {
-    btn.style.display = "block";
-    msg.style.display = "none";
-  } else {
-    btn.style.display = "none";
-    msg.style.display = "block";
-  }
-
-  players.forEach((p) => {
-    const div = document.createElement("div");
-    div.className = "player-card";
-    div.innerHTML = `
-            <span>${p.username} ${
-      p.session_id === mySessionId ? "(You)" : ""
-    }</span>
-            ${p.is_admin ? '<span class="admin-badge">👑</span>' : ""}
-        `;
-    list.appendChild(div);
-  });
+function resetGame() {
+  currentGameId = null;
+  mySessionId = null;
+  currentDrawerId = null;
+  isDrawing = false;
+  document.getElementById("player-list").innerHTML = "";
+  overlay.classList.add("hidden");
+  showScreen("login");
 }
 
 function closeOverlay() {
   overlay.classList.add("hidden");
-  showScreen("lobby"); // Go back to lobby to wait for next round start
+  // Return to lobby to wait for next round
+  showScreen("lobby");
 }
 
 function sendGuess(e) {
   e.preventDefault();
-  if (mySessionId === currentDrawerId) return; // Drawers can't chat
+  // Prevent drawers from chatting (spoiling)
+  if (mySessionId === currentDrawerId) return;
 
   const input = document.getElementById("guess-input");
   const msg = input.value.trim();
@@ -156,74 +153,128 @@ function sendGuess(e) {
   input.value = "";
 }
 
-function addMessage(text) {
-  const div = document.createElement("div");
-  div.innerText = text;
-  const msgs = document.getElementById("messages");
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+// --- Helper Functions ---
+
+function updateLobbyList(players) {
+  const list = document.getElementById("player-list");
+  list.innerHTML = "";
+
+  let amIAdmin = false;
+
+  // Check if I am admin based on PID
+  players.forEach((p) => {
+    if (p.pid === mySessionId && p.is_admin) {
+      amIAdmin = true;
+    }
+  });
+
+  // Toggle Start Button
+  const btn = document.getElementById("btn-start-game");
+  const msg = document.getElementById("waiting-msg");
+
+  if (amIAdmin) {
+    btn.style.display = "block";
+    msg.style.display = "none";
+  } else {
+    btn.style.display = "none";
+    msg.style.display = "block";
+  }
+
+  // Render Players
+  players.forEach((p) => {
+    const div = document.createElement("div");
+    div.className = "player-card";
+    div.innerHTML = `
+            <span>${p.username} ${p.pid === mySessionId ? "(You)" : ""}</span>
+            ${p.is_admin ? '<span class="admin-badge">👑</span>' : ""}
+        `;
+    list.appendChild(div);
+  });
 }
 
-// --- Canvas Logic ---
+function addMessage(text, type = "msg-chat") {
+  const div = document.createElement("div");
+  div.className = type;
+  div.innerText = text;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// --- Canvas & Drawing Logic ---
+
 function resizeCanvas() {
   const container = document.getElementById("canvas-container");
-  canvas.width = container.clientWidth;
-  canvas.height = container.clientHeight;
+  if (container) {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+  }
 }
 window.addEventListener("resize", resizeCanvas);
 
+// Normalize coordinates for mobile/desktop
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
+
   return {
     x: cx - rect.left,
     y: cy - rect.top,
-    nx: (cx - rect.left) / canvas.width,
-    ny: (cy - rect.top) / canvas.height,
+    normX: (cx - rect.left) / canvas.width,
+    normY: (cy - rect.top) / canvas.height,
   };
 }
 
 function startDraw(e) {
-  if (mySessionId !== currentDrawerId) return;
+  if (mySessionId !== currentDrawerId) return; // Permission check
   isDrawing = true;
   const p = getPos(e);
+
   localDraw(p.x, p.y, "start");
-  socket.emit("draw_start", { game_id: currentGameId, x: p.nx, y: p.ny });
+  socket.emit("draw_start", { game_id: currentGameId, x: p.normX, y: p.normY });
 }
 
 function moveDraw(e) {
   if (!isDrawing || mySessionId !== currentDrawerId) return;
-  e.preventDefault();
+
+  // Prevent scrolling on mobile while drawing
+  if (e.cancelable) e.preventDefault();
+
   const p = getPos(e);
   localDraw(p.x, p.y, "line");
-  socket.emit("draw_line", { game_id: currentGameId, x: p.nx, y: p.ny });
+  socket.emit("draw_line", { game_id: currentGameId, x: p.normX, y: p.normY });
 }
 
 function stopDraw() {
   isDrawing = false;
 }
 
+// Actual Canvas Drawing
 function localDraw(x, y, type) {
   if (type === "start") {
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
+    ctx.strokeStyle = "#000";
   } else {
     ctx.lineTo(x, y);
     ctx.stroke();
   }
 }
 
-function drawRemote(nx, ny, type) {
-  localDraw(nx * canvas.width, ny * canvas.height, type);
+// Remote Drawing (Convert normalized back to pixels)
+function drawRemote(normX, normY, type) {
+  localDraw(normX * canvas.width, normY * canvas.height, type);
 }
 
-// Events
+// Event Listeners (Mouse & Touch)
 canvas.addEventListener("mousedown", startDraw);
 canvas.addEventListener("mousemove", moveDraw);
 canvas.addEventListener("mouseup", stopDraw);
+canvas.addEventListener("mouseout", stopDraw);
+
+// Passive: false is crucial for preventing scroll on touchmove
 canvas.addEventListener("touchstart", startDraw, { passive: false });
 canvas.addEventListener("touchmove", moveDraw, { passive: false });
 canvas.addEventListener("touchend", stopDraw);

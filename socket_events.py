@@ -94,14 +94,34 @@ def draw_line(data):
     y = data['y']
     socketio.emit('draw_line', {'x': x, 'y': y}, to=game_id, skip_sid=sid)
 
+@socketio.on('leave_game')
+def leave_game(data):
+    sid = getattr(request, 'sid')
+    game_id = data.get('game_id')
+    if game_id:
+        game = game_manager.get_game(game_id)
+        if game and sid in game.players:
+            handle_player_leave(sid, game)
+
 @socketio.on('disconnect')
 def disconnect():
     sid = getattr(request, 'sid')
-    # Remove from all games
     games_to_check = list(game_manager.games.values())
     for game in games_to_check:
         if sid in game.players:
-            game.remove_player(sid)
-            socketio.emit('update_players', {'players': game.get_all_players()}, to=game.id)
-            if len(game.players) == 0:
-                game_manager.delete_game(game.id)
+            handle_player_leave(sid, game)
+
+def handle_player_leave(sid, game):
+    # Check if the person leaving is the admin
+    player = game.players.get(sid)
+    was_admin = player.is_admin if player else False
+    
+    game.remove_player(sid)
+
+    if was_admin:
+        socketio.emit('game_closed', {'message': 'Admin left the game.'}, to=game.id)
+        game_manager.delete_game(game.id)
+    elif len(game.players) == 0:
+        game_manager.delete_game(game.id)
+    else:
+        socketio.emit('update_players', {'players': game.get_all_players()}, to=game.id)
