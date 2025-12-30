@@ -1,9 +1,25 @@
 services:
-  game-server:
+  game:
     build: .
     container_name: sketchit
     restart: unless-stopped
-    ports:
-      - "80:5000" # Connects VPS port 80 to App port 5000
+    expose:
+      - "5000"
     environment:
-      - PYTHONUNBUFFERED=1 # Ensures logs show up in real-time
+      - PYTHONUNBUFFERED=1
+
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    container_name: caddy_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
