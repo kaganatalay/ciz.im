@@ -1,93 +1,58 @@
-# SEN4015 Project - Drawing Guessing Game
+# ciz.im
 
-A real-time drawing and guessing game built with Python Flask and SocketIO, inspired by games like Gartic.io.
+A real-time multiplayer drawing and guessing game built with **Python (Flask)** and **Socket.IO**. Players take turns drawing words while others guess in the chat, similar to **Gartic.io**.
 
 ## Features
 
-- **Real-time drawing**: Players can draw on a shared canvas using HTML5 Canvas
-- **Word guessing**: Players guess the word being drawn in real-time chat
-- **Multiplayer**: Support for multiple games and players
-- **Turkish words**: Word bank containing Turkish words for drawing
-- **Game management**: Create and join games with unique game IDs
+- **Real-time Drawing**: Live canvas syncing across all players
+- **Multiplayer**: Create private rooms or join existing ones via a Game ID
+- **Chat System**: Integrated chat for guessing words and talking
 
-## Quick Start
+## Running Locally
 
 ### Prerequisites
 
-- Python 3.14+
-- pip (Python package manager)
+- Docker
+- uv
 
-### Installation
+### Quick Start
 
-1. Clone the repository:
+1. **Clone the repository**
 
-```bash
-git clone https://github.com/kaganatalay/SEN4015-Project.git
-cd SEN4015-Project
-```
+   ```bash
+   git clone https://github.com/kaganatalay/ciz.im.git
+   cd ciz.im
+   ```
 
-2. Create and activate virtual environment:
+2. **Start the application**
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
+   ```bash
+   docker compose up --build -d
+   ```
 
-3. Install dependencies:
+3. **Play**
 
-```bash
-pip install -e .
-```
+   Open your browser and navigate to:
 
-### Running the Application
-
-```bash
-python app.py
-```
-
-Open your browser to `http://localhost:5000` to start playing.
+   - `http://localhost`
 
 ## Game Rules
 
-1. **Create a game** or **join an existing game** using a game ID
-2. The game creator (admin) can start the game when ready
-3. One player is randomly selected to draw while others guess
-4. Players guess the word in the chat
-5. Correct guesses earn points
-6. The round ends when all players (except drawer) guess correctly
+- **Start**: Create a new game or join one with a code
+- **Draw**: One player is chosen to draw a specific word
+- **Guess**: Other players guess the word in the chat box
+- **Win**: Points are awarded for correct guesses. The round ends when someone guesses correctly
 
 ## Project Structure
 
-```
-.
-├── app.py                 # Main Flask application
-├── extensions.py          # Flask extensions (SocketIO, GameManager)
-├── models.py              # Data models (Player, Game classes)
-├── socket_events.py       # SocketIO event handlers
-├── templates/
-│   └── index.html         # Main HTML template
-├── static/
-│   ├── script.js          # Frontend JavaScript
-│   └── style.css          # Frontend styles
-└── pyproject.toml         # Project configuration
-```
-
-## Environment Variables
-
-- `SECRET_KEY`: Flask secret key (change in production)
-
-## Development
-
-### Dependencies
-
-- Flask 3.1.2+
-- Flask-SocketIO 5.6.0+
-
-### Browser Support
-
-- Modern browsers with WebSocket support
-- HTML5 Canvas support required for drawing
+- `app.py` – Application entry point
+- `src/models.py` – Game logic (Player and Game classes)
+- `src/socket_events.py` – Handles real-time communication
+- `src/game_manager.py` - Helper class to create, delete and retrieve games
+- `static/*` - Frontend stylesheet and javascript
+- `templates/index.html` - Frontend HTML
+- `pyproject.toml` – Project configuration and dependencies
 
 ## License
 
-This project is part of SEN4015 coursework.
+Created for the **SEN4015 (Advanced Programming with Python)** coursework.

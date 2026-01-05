@@ -1,7 +1,7 @@
 services:
   game:
     build: .
-    container_name: sketchit
+    container_name: cizim
     restart: unless-stopped
     expose:
       - "5000"
