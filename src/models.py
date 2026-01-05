@@ -26,21 +26,21 @@ class Game:
     @staticmethod
     def load_words(filename="words.txt"):
         if not os.path.exists(filename):
-            raise FileNotFoundError(f"❌ ERROR: The file '{filename}' was not found. Please create it in the root directory.")
+            raise FileNotFoundError(f"ERROR: The file '{filename}' was not found. Please create it in the root directory.")
 
         try:
             with open(filename, "r", encoding="utf-8") as f:
                 words = [line.strip() for line in f if line.strip()]
             
             if not words:
-                raise ValueError(f"❌ ERROR: The file '{filename}' exists but is empty.")
+                raise ValueError(f"ERROR: The file '{filename}' exists but is empty.")
                 
-            print(f"✅ Successfully loaded {len(words)} words from {filename}.")
+            print(f"Successfully loaded {len(words)} words from {filename}.")
             return words
             
         except Exception as e:
             # Catch other permission/read errors and crash
-            raise RuntimeError(f"❌ ERROR: Could not read '{filename}': {e}")
+            raise RuntimeError(f"ERROR: Could not read '{filename}': {e}")
 
     def __init__(self):
         self.id = str(uuid.uuid4())[:4].upper()
@@ -50,10 +50,6 @@ class Game:
         self.current_drawer = None
         self.current_word = ""
         self.guessed_players = set()
-
-        # If this fails, the application will crash here.
-        if not Game.WORDS:
-            Game.WORDS = self.load_words()
 
     def add_player(self, player: Player):        
         if (player.is_admin and any(p.is_admin for p in self.players.values())):
@@ -108,3 +104,5 @@ class Game:
             }
 
         return {"type": "CHAT_MESSAGE", "message": guess_text}
+    
+Game.WORDS = Game.load_words()
