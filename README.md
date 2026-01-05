@@ -1,4 +1,4 @@
-# ciz.im
+# 🎨 ciz.im
 
 A real-time multiplayer drawing and guessing game built with **Python (Flask)** and **Socket.IO**. Players take turns drawing words while others guess in the chat, similar to **Gartic.io**.
 
